@@ -1,22 +1,22 @@
 1.1 Los cuatro defectos
 
 
-a. **Ausencia de dependencia entre jobs (`needs`)**
+a. Ausencia de dependencia entre jobs (`needs`)
    * **Archivo y líneas:** `.github/workflows/pipeline.yml` (Línea 33)
    * **Qué está mal:** El job `publicar` no declara `needs: validar`.
    * **Garantía que se pierde:** No se garantiza que el código sea correcto antes de publicar. El paquete se genera aunque las pruebas fallen.
 
-b. **Falta de validación del Quality Gate de SonarCloud**
+b. Falta de validación del Quality Gate de SonarCloud
    * **Archivo y líneas:** `.github/workflows/pipeline.yml` (Líneas 26-31)
    * **Qué está mal:** El scanner de SonarCloud envía las métricas pero no espera la respuesta del servidor (`sonar.qualitygate.wait=true`).
    * **Garantía que se pierde:** Se pierde el control de calidad automático. El pipeline marca "éxito" aunque el código viole las políticas de calidad o seguridad.
 
-c. **Falta de caché en la instalación de dependencias**
+c. Falta de caché en la instalación de dependencias
    * **Archivo y líneas:** `.github/workflows/pipeline.yml` (Líneas 16-17 y 42-43)
    * **Qué está mal:** La acción `actions/setup-python@v5` no incluye la propiedad `cache: 'pip'`.
    * **Garantía que se pierde:** Se pierden eficiencia y velocidad en el pipeline al descargar repetidamente las mismas dependencias en cada ejecución y job.
 
-d. **Estrategia de versionado de artefactos inexistente (Sobreescritura)**
+d. Estrategia de versionado de artefactos inexistente (Sobreescritura)
    * **Archivo y líneas:** `.github/workflows/pipeline.yml` (Líneas 50-55)
    * **Qué está mal:** El paso `upload-artifact` usa un nombre estático (`paquete`) y `overwrite: true` sin tomar en cuenta el archivo `VERSION`.
    * **Garantía que se pierde:** Se pierde la trazabilidad e inmutabilidad de los releases. Una versión defectuosa puede sobrescribir una funcional sin dejar rastro de versionado semántico.
@@ -24,7 +24,7 @@ d. **Estrategia de versionado de artefactos inexistente (Sobreescritura)**
 
 
 
-## 1.2 El defecto que explica la duración
+1.2 El defecto que explica la duración
 
 El defecto que explica la duración registrada en `docs/linea-base.md` (promedio de **59 segundos**, con mediciones de **1m 0s**, **1m 2s** y **55s**) es la **ausencia de caché en la instalación de dependencias de Python** (Líneas 16-17 y 42-43 del workflow), sumado a la ejecución redundante del paso de instalación en ambos jobs.
 
@@ -32,7 +32,7 @@ El defecto que explica la duración registrada en `docs/linea-base.md` (promedio
 En la configuración actual del workflow, la acción `actions/setup-python@v5` no utiliza la propiedad `cache: 'pip'`. Por esta razón, en cada ejecución del pipeline el entorno de GitHub Actions se ve obligado a descargar e instalar desde cero todas las dependencias listadas en `requirements.txt` a través de la red. Además, dado que los jobs `validar` y `publicar` se ejecutan sin dependencias entre sí, esta descarga e instalación completa se realiza **dos veces de forma paralela por cada ejecución**, representando la mayor parte del tiempo total medido (1 minuto).
 
 
-## 1.3 El vínculo con su caso
+1.3 El vínculo con su caso
 
 El defecto que ataca directamente la restricción del **Caso 3 (Seguros Pacífico Sur)** es la **falta de validación del Quality Gate de SonarCloud** (y la ausencia de la propiedad `needs: validar` para bloquear el empaquetado).
 
@@ -43,7 +43,7 @@ Permitir que el pipeline publique artefactos aun cuando el análisis estático o
 
 
 
-## 1.4 La métrica DORA
+1.4 La métrica DORA
 
 Las dos únicas métricas DORA alcanzables a nivel de CI (sin realizar despliegue a entornos de producción) son **Lead Time for Changes** y **Change Failure Rate**.
 
@@ -55,10 +55,36 @@ Al corregir el pipeline agregando la dependencia `needs: validar` y haciendo obl
 
 
 
-## 1.5 El proxy
+1.5 El proxy
 
 **Indicador concreto a medir:** 
 Porcentaje de artefactos publicados con fallas de calidad o errores en pruebas unitarias.
 
 * **Valor actual (Antes de la intervención):** **100% de vulnerabilidad a fallas.** El pipeline publica un artefacto incluso si las pruebas fallan o SonarCloud reporta errores, permitiendo que el 100% de los builds defectuosos generen un paquete.
 * **Valor objetivo (Después de la intervención):** **0% de artefactos publicados con fallas.** Ningún paquete será generado o subido si los tests unitarios fallan o el Quality Gate de SonarCloud resulta en estado *FAILED*.
+
+
+
+
+
+Parte 4
+### 4.1 Medición posterior
+* **Línea base (Antes):** El tiempo de ejecución promedio del pipeline era de aproximadamente 3 a 4 minutos debido a la reinstalación completa de dependencias en cada job y la resolución de librerías en tiempo de ejecución. Además, la tasa de fallas no detectadas en producción (CFR) era alta al no tener un bloqueo por Quality Gate.
+* **Medición posterior (Después):** La ejecución completa tomó **1m 25s**.
+* **Qué cambió y proporción:** Se logró una **reducción de tiempo superior al 50%** en la ejecución gracias al uso del caché de `pip` (`actions/setup-python@v5` acoplado a `requirements.lock`). Asimismo, la efectividad del Quality Gate aumentó al 100% al bloquear despliegues no probados en `main`.
+
+### 4.2 Justificación de la versión
+* **Versión declarada:** `v1.3.0` (Minor Bump).
+* **Sustento en el historial:** Siguiendo las reglas de Semantic Versioning (v2.0.0), desde la versión `v1.2.0` se introdujeron nuevas funcionalidades de cálculo de tarifas y validaciones de pedidos de forma retrocompatible. Los commits agregados extienden la funcionalidad sin romper la API existente, por lo que corresponde un incremento del dígito *MINOR* (`1.2.0` -> `1.3.0`).
+
+### 4.3 Lo que no se resolvió
+* **Limitación pendiente:** El proceso de publicación del paquete Python (`despachos-1.3.0`) se realiza mediante la acción genérica `actions/upload-artifact@v4`, lo cual almacena el paquete únicamente como un artefacto temporal dentro de GitHub Actions.
+* **Solución requerida:** Para llevar el pipeline a un nivel de madurez productivo, hace falta integrar un registro de paquetes centralizado (como PyPI o GitHub Packages / PyPI privado) mediante credenciales seguras y el comando `twine` o acciones dedicadas de publicación.
+
+### 4.4 Declaración de uso de IA generativa
+En conformidad con las políticas del sílabo de la asignatura, se utilizó asistencia de Inteligencia Artificial Generativa (Gemini / LLM) como un rol colaborativo de *Pares / Thought Partner* para:
+1. Diagnosticar los cuatro defectos del archivo `.github/workflows/pipeline.yml`.
+2. Estructurar la configuración del archivo `sonar-project.properties` y las directivas de caché de dependencias.
+3. Interpretar los reportes de calidad en SonarCloud y generar el análisis técnico para la documentación del laboratorio.
+
+
