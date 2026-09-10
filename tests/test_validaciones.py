@@ -49,3 +49,16 @@ def test_normalizar_cliente():
 def test_normalizar_cliente_corto():
     with pytest.raises(ErrorValidacion):
         normalizar_cliente("ab")
+
+def test_peso_valido():
+    assert validar_peso(10.0) == 10.0
+
+
+def test_peso_excede_maximo():
+    with pytest.raises(ErrorValidacion):
+        validar_peso(80.0)
+
+
+def test_peso_cero():
+    with pytest.raises(ErrorValidacion):
+        validar_peso(0)
