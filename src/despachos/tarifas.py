@@ -81,3 +81,28 @@ def desglose(envio: Envio) -> dict[str, float]:
         "factor_zona": factor,
         "total": calcular(envio),
     }
+
+
+def calcular_recargo_despacho(peso_kg: float, es_urgente: bool, zona: str) -> float:
+    recargo = 0.0
+    if peso_kg <= 0:
+        raise ValueError("El peso debe ser mayor a cero")
+    
+    if peso_kg > 10.0:
+        recargo += 25.0
+    elif peso_kg > 5.0:
+        recargo += 12.5
+    else:
+        recargo += 5.0
+
+    if es_urgente:
+        recargo *= 1.5
+
+    if zona == "remota":
+        recargo += 15.0
+    elif zona == "urbana":
+        recargo += 2.0
+    else:
+        recargo += 5.0
+
+    return recargo
