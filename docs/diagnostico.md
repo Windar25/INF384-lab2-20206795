@@ -24,15 +24,12 @@ d. **Estrategia de versionado de artefactos inexistente (Sobreescritura)**
 
 
 
-
-
-
 ## 1.2 El defecto que explica la duración
 
 El defecto que explica la duración registrada en `docs/linea-base.md` (promedio de **59 segundos**, con mediciones de **1m 0s**, **1m 2s** y **55s**) es la **ausencia de caché en la instalación de dependencias de Python** (Líneas 16-17 y 42-43 del workflow), sumado a la ejecución redundante del paso de instalación en ambos jobs.
 
 **Sustento:**
-En la configuración actual del workflow, la acción `actions/setup-python@v5` no utiliza la propiedad `cache: 'pip'`. Por esta razón, en cada ejecución del pipeline el entorno de GitHub Actions se ve obligado a descargar e instalar desde cero todas las dependencias listadas en `requirements.txt` a través de la red. Además, dado que los jobs `validar` y `publicar` se ejecutan sin dependencias entre sí, esta descarga e instalación completa se realiza **dos veces de forma paralela por cada ejecución**, representando la mayor parte del tiempo total medido (~1 minuto).
+En la configuración actual del workflow, la acción `actions/setup-python@v5` no utiliza la propiedad `cache: 'pip'`. Por esta razón, en cada ejecución del pipeline el entorno de GitHub Actions se ve obligado a descargar e instalar desde cero todas las dependencias listadas en `requirements.txt` a través de la red. Además, dado que los jobs `validar` y `publicar` se ejecutan sin dependencias entre sí, esta descarga e instalación completa se realiza **dos veces de forma paralela por cada ejecución**, representando la mayor parte del tiempo total medido (1 minuto).
 
 
 ## 1.3 El vínculo con su caso
@@ -65,5 +62,3 @@ Porcentaje de artefactos publicados con fallas de calidad o errores en pruebas u
 
 * **Valor actual (Antes de la intervención):** **100% de vulnerabilidad a fallas.** El pipeline publica un artefacto incluso si las pruebas fallan o SonarCloud reporta errores, permitiendo que el 100% de los builds defectuosos generen un paquete.
 * **Valor objetivo (Después de la intervención):** **0% de artefactos publicados con fallas.** Ningún paquete será generado o subido si los tests unitarios fallan o el Quality Gate de SonarCloud resulta en estado *FAILED*.
-
-* 
