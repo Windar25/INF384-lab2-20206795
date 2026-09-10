@@ -41,7 +41,7 @@ La versión declarada fue v1.3.0, correspondiente a un incremento. Desde la vers
 Como limitación, el proceso de publicación de Python despachos-1.3.0 se realiza mediante la acción actions/upload-artifact@v4, lo cual almacena el paquete únicamente como un artefacto temporal. Para resolver esto y llevar el pipeline a un nivel de madurez productivo, hace falta integrar un registro de paquetes centralizado mediante credenciales seguras.
 
 4.4 Declaración de uso de IA generativa
-Se utilizó la IA (Gemini) como una herramienta de apoyo para revisar el flujo de trabajo, consultar dudas sobre la configuración de herramientas y recibir sugerencias en la redacción de la documentación del laboratorio. Todo el código final, las pruebas y los cambios realizados en el proyecto fueron verificados y ejecutados por cuenta propia. Entre los prompts planteados:
+Se utilizó la IA (Gemini) como una herramienta de apoyo para revisar el flujo de trabajo del laboratorio, consultar dudas sobre la configuración de herramientas, sintaxis, codigos y conceptos y recibir sugerencias en la redacción de la documentación del laboratorio. Entre los prompts planteados:
 
 - "dime qué diferencia hay entre las métricas DORA lead time y change failure"
 - "dime cómo se vincula el %c&a de la etapa de pruebas en un VSM con el change failure rate de DORA"
